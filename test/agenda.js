@@ -85,7 +85,7 @@ describe("agenda", function() {
 
     describe('configuration methods', function() {
 
-      describe.skip('mongo', function() {
+      describe('mongo', function() {
         it('sets the _db directly', function() {
           var agenda = new Agenda();
           agenda.mongo(mongo);
