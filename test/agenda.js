@@ -35,6 +35,7 @@ function failOnError(err) {
 }
 
 describe("agenda", function() {
+  this.timeout(5000);
 
   beforeEach(function(done) {
     jobs = new Agenda({
@@ -64,7 +65,7 @@ describe("agenda", function() {
         clearJobs(function() {
           mongo.close(function () {
             jobs.stop();
-            jobs._mdb.close(done);
+            jobs._dbAdapter.close(done);
           });
         });
       }, 50);
@@ -77,18 +78,18 @@ describe("agenda", function() {
 
     describe('configuration methods', function() {
       it('sets the _db directly when passed as an option', function() {
-        var agenda = new Agenda({mongo: mongo});
-        expect(agenda._mdb.databaseName).to.equal('agenda-test');
+        var agenda = new Agenda({ mongo: mongo });
+        expect(agenda._dbAdapter.databaseName()).to.equal('agenda-test');
       });
     });
 
     describe('configuration methods', function() {
 
-      describe('mongo', function() {
+      describe.skip('mongo', function() {
         it('sets the _db directly', function() {
           var agenda = new Agenda();
           agenda.mongo(mongo);
-          expect(agenda._mdb.databaseName).to.equal('agenda-test');
+          expect(agenda._dbAdapter.databaseName()).to.equal('agenda-test');
         });
 
         it('returns itself', function() {
@@ -399,7 +400,7 @@ describe("agenda", function() {
       });
 
       afterEach(function(done) {
-        jobs._collection.remove({name: {$in: ['jobA', 'jobB']}}, function(err) {
+        jobs._dbAdapter.deleteJobs({name: {$in: ['jobA', 'jobB']}}, function(err) {
           if(err) return done(err);
           done();
         });
@@ -894,7 +895,7 @@ describe("agenda", function() {
         jobs.start();
         setTimeout(function() {
           jobs.stop(function(err, res) {
-            jobs._collection.findOne({name: 'longRunningJob'}, function(err, job) {
+            mongo.collection('agendaJobs').findOne({name: 'longRunningJob'}, function(err, job) {
               expect(job.lockedAt).to.be(null);
               done();
             });
