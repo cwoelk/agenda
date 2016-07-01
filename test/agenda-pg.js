@@ -11,7 +11,7 @@ describe('agenda-pg', function() {
     var agenda = new Agenda({
       pg: {
         user: 'postgresql',
-        database: 'test',
+        database: 'agenda-test',
         port: 5432,
       }
     }, done);
