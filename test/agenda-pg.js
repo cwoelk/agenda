@@ -1,5 +1,3 @@
-
-
 var expect = require('expect.js'),
     path = require('path'),
     moment = require('moment-timezone'),
