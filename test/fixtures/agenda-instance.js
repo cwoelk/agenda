@@ -15,7 +15,7 @@ var agenda = new Agenda({ db: { address: connStr } }, function(err, collection) 
 
 	// Ensure we can shut down the process from tests
 	process.on('message', function(msg) {
-	  if( msg == 'exit' ) process.exit(0);
+	  if ( msg == 'exit' ) process.exit(0);
 	});
 
 	// Send default message of "notRan" after 400ms
@@ -25,4 +25,3 @@ var agenda = new Agenda({ db: { address: connStr } }, function(err, collection) 
 	}, 400);
 
 });
-

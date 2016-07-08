@@ -755,7 +755,9 @@ describe("agenda", function() {
       it('extends the lock lifetime', function(done) {
         var lockedAt = new Date();
         var job = new Job({agenda: jobs, name: 'some job', lockedAt: lockedAt});
-        job.save = function(cb) { cb(); };
+        job.save = function(cb) {
+          cb();
+        };
         setTimeout(function() {
           job.touch(function() {
             expect(job.attrs.lockedAt).to.be.greaterThan(lockedAt);
@@ -1243,7 +1245,10 @@ describe("agenda", function() {
         it('Should not rerun completed jobs after restart', function(done) {
           var i = 0;
 
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
+
           var receiveMessage = function(msg) {
             if ( msg == "ran" ) {
               expect(i).to.be(0);
@@ -1269,7 +1274,9 @@ describe("agenda", function() {
         it('Should properly run jobs when defined via an array', function(done) {
           var ran1 = false, ran2 = true, doneCalled = false;
 
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
           var receiveMessage = function(msg) {
             if ( msg == "test1-ran" ) {
               ran1 = true;
@@ -1327,7 +1334,9 @@ describe("agenda", function() {
         it('Should not run jobs scheduled in the future', function(done) {
           var i = 0;
 
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
           var receiveMessage = function(msg) {
             if ( msg == 'notRan' ) {
               if ( i < 5 ) return done();
@@ -1350,7 +1359,9 @@ describe("agenda", function() {
 
         it('Should run past due jobs when process starts', function(done) {
 
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
           var receiveMessage = function(msg) {
             if ( msg == 'ran' ) {
               done();
@@ -1371,7 +1382,9 @@ describe("agenda", function() {
         it('Should schedule using array of names', function(done) {
           var ran1 = false, ran2 = false, doneCalled = false;
 
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
           var receiveMessage = function(msg) {
 
             if ( msg == "test1-ran" ) {
@@ -1404,7 +1417,9 @@ describe("agenda", function() {
       describe('now()', function() {
 
         it('Should immediately run the job', function(done) {
-          var serviceError = function(e) { done(e); };
+          var serviceError = function(e) {
+            done(e);
+          };
           var receiveMessage = function(msg) {
             if ( msg == 'ran' ) {
               return done();

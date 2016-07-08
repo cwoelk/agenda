@@ -11,10 +11,10 @@ rules:
     no-multi-spaces: 0
     no-underscore-dangle: 0
     no-shadow: 0
-    no-use-before-define: [1, "nofunc"]
     new-cap: 0
     radix: 2
     quotes: 0
+    no-use-before-define: 0
     space-before-function-paren: [2, "never"]
     keyword-spacing: [2, { "after": true }]
     spaced-comment: [2, "always", { exceptions: ["-"]}]
