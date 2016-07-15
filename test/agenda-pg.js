@@ -22,7 +22,7 @@ var jobTimeout = process.env.TRAVIS ? 1500 : 300;
 function clearJobs(done) {
   var client = new Client(dbConfig)
   client.connect();
-  client.query('DROP DATABASE agendaJobs', function(error) {
+  client.query('TRUNCATE TABLE agendajobs', function(error, result) {
     client.end();
     done(error);
   });
@@ -48,7 +48,7 @@ describe('agenda-pg', function() {
       });
 
       describe('pg', function() {
-        describe('Client', function() {
+        describe ('Client', function() {
           var pgClient
 
           beforeEach(function() {
@@ -169,6 +169,24 @@ describe('agenda-pg', function() {
           });
         });
       });
+
+      describe('schedule', function() {
+        describe('with a job name specified', function() {
+          it('returns a job', function() {
+            expect(jobs.schedule('in 5 minutes', 'send email')).to.be.a(Job);
+          });
+          it('sets the schedule', function() {
+            var fiveish = (new Date()).valueOf() + 250000;
+            expect(jobs.schedule('in 5 minutes', 'send email').attrs.nextRunAt.valueOf()).to.be.greaterThan(fiveish);
+          });
+        });
+        describe('with array of names specified', function() {
+          it('returns array of jobs', function() {
+            expect(jobs.schedule('5 minutes', ['send email', 'some job'])).to.be.an('array');
+          });
+        });
+      });
+
     });
   });
 });
