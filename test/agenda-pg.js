@@ -53,7 +53,10 @@ describe('agenda-pg', function() {
 
           beforeEach(function() {
             pgClient = new Client(dbConfig);
-            pgClient.on('drain', pgClient.end.bind(pgClient));
+          });
+
+          afterEach(function() {
+            pgClient.end();
           });
 
           it('sets the _db directly', function(done) {
