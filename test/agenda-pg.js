@@ -187,6 +187,25 @@ describe('agenda-pg', function() {
         });
       });
 
+      describe('now', function() {
+        it('returns a job', function() {
+          expect(jobs.now('send email')).to.be.a(Job);
+        });
+
+        it('sets the schedule', function() {
+          var now = new Date();
+          expect(jobs.now('send email').attrs.nextRunAt.valueOf()).to.be.greaterThan(now.valueOf() - 1);
+        });
+
+        it('runs the job immediately', function(done) {
+          jobs.define('immediateJob', function(job) {
+            expect(job.isRunning()).to.be(true);
+            jobs.stop(done);
+          });
+          jobs.now('immediateJob');
+          jobs.start();
+        });
+      });
     });
   });
 });
