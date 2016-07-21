@@ -209,6 +209,55 @@ describe('agenda-pg', function() {
           jobs.start();
         });
       });
+
+      describe('jobs', function() {
+        it('returns jobs', function(done) {
+          var job = jobs.create('test');
+          job.save(function() {
+            jobs.jobs({}, function(err, c) {
+              expect(c.length).to.not.be(0);
+              expect(c[0]).to.be.a(Job);
+              clearJobs(done);
+            });
+          });
+        });
+      });
+
+      describe('purge', function() {
+        it('removes all jobs without definitions', function(done) {
+          var job = jobs.create('no definition');
+          jobs.stop(function() {
+            job.save(function() {
+              jobs.jobs({name: 'no definition'}, function(err, j) {
+                if (err) return done(err);
+                expect(j).to.have.length(1);
+
+                jobs.purge(function(err) {
+                  if (err) return done(err);
+
+                  jobs.jobs({name: 'no definition'}, function(err, j) {
+                    if (err) return done(err);
+
+                    expect(j).to.have.length(0);
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      describe('saveJob', function() {
+        it('persists job to the database', function(done) {
+          var job = jobs.create('someJob', {});
+          job.save(function(err, job) {
+            expect(job.attrs._id).to.be.ok();
+            clearJobs(done);
+          });
+        });
+      });
+
     });
   });
 });
