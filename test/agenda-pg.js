@@ -307,5 +307,92 @@ describe('agenda-pg', function() {
         });
       });
     });
+
+    describe('cancel', function() {
+      beforeEach(function(done) {
+        var remaining = 3;
+        var checkDone = function(err, job) {
+          if (err) return done(err);
+          remaining--;
+          if (!remaining) {
+            done();
+          }
+        };
+        jobs.create('jobA').save(checkDone);
+        jobs.create('jobA', 'someData').save(checkDone);
+        jobs.create('jobB').save(checkDone);
+      });
+
+      afterEach(function(done) {
+        jobs._dbAdapter.deleteJobs('name IN (\'jobA\', \'jobB\')', function(err) {
+          if (err) return done(err);
+          done();
+        });
+      });
+
+      it('should cancel a job', function(done) {
+        var jobQuery = "name = 'jobA'";
+
+        jobs.jobs(jobQuery, function(err, j) {
+          if (err) return done(err);
+
+          expect(j).to.have.length(2);
+          jobs.cancel(jobQuery, function(err) {
+            if (err) return done(err);
+
+            jobs.jobs(jobQuery, function(err, j) {
+              if (err) return done(err);
+              expect(j).to.have.length(0);
+              done();
+            });
+          });
+        });
+      });
+
+      it('should cancel multiple jobs', function(done) {
+        var multipleJobsQuery = "name IN ('jobA', 'jobB')";
+
+        jobs.jobs(multipleJobsQuery, function(err, j) {
+          if (err) return done(err);
+
+          expect(j).to.have.length(3);
+          jobs.cancel(multipleJobsQuery, function(err) {
+            if (err) return done(err);
+
+            jobs.jobs(multipleJobsQuery, function(err, j) {
+              if (err) return done(err);
+
+              expect(j).to.have.length(0);
+              done();
+            });
+          });
+        });
+      });
+
+      xit('should cancel jobs only if the data matches', function(done){
+        var jobWithDataQuery = "name = 'jobA' AND data = 'someData'";
+
+        jobs.jobs(jobWithDataQuery, function(err, j) {
+          if (err) return done(err);
+
+          expect(j).to.have.length(1);
+          jobs.cancel(jobWithDataQuery, function(err) {
+            if (err) return done(err);
+
+            jobs.jobs(jobWithDataQuery, function(err, j) {
+              if (err) return done(err);
+
+              expect(j).to.have.length(0);
+              jobs.jobs("name = 'jobA'", function(err, j) {
+                if (err) return done(err);
+
+                expect(j).to.have.length(1);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
   });
 });
