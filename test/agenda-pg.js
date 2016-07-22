@@ -190,6 +190,54 @@ describe('agenda-pg', function() {
         });
       });
 
+      xdescribe('unique', function() {
+        describe('should demonstrate unique contraint', function(done) {
+          it('should modify one job when unique matches', function(done) {
+            jobs.create('unique job', {type: 'active', userId: '123', 'other': true}).unique({'data.type': 'active', 'data.userId': '123'}).schedule("now").save(function(err, job1) {
+              setTimeout(function() { // Avoid timing condition where nextRunAt coincidentally is the same
+                jobs.create('unique job', {type: 'active', userId: '123', 'other': false}).unique({'data.type': 'active', 'data.userId': '123'}).schedule("now").save(function(err, job2) {
+                  expect(job1.attrs.nextRunAt.toISOString()).not.to.equal(job2.attrs.nextRunAt.toISOString())
+                  mongo.collection('agendaJobs').find({name: 'unique job'}).toArray(function(err, j) {
+                    expect(j).to.have.length(1);
+                    done();
+                  });
+                });
+              }, 1);
+            });
+          });
+
+          it('should not modify job when unique matches and insertOnly is set to true', function(done) {
+            jobs.create('unique job', {type: 'active', userId: '123', 'other': true}).unique({'data.type': 'active', 'data.userId': '123'}, { insertOnly: true }).schedule("now").save(function(err, job1) {
+              jobs.create('unique job', {type: 'active', userId: '123', 'other': false}).unique({'data.type': 'active', 'data.userId': '123'}, {insertOnly: true}).schedule("now").save(function(err, job2) {
+                expect(job1.attrs.nextRunAt.toISOString()).to.equal(job2.attrs.nextRunAt.toISOString())
+                mongo.collection('agendaJobs').find({name: 'unique job'}).toArray(function(err, j) {
+                  expect(j).to.have.length(1);
+                  done();
+                });
+              });
+            });
+          });
+        });
+
+        describe('should demonstrate non-unique contraint', function(done) {
+          it('should create two jobs when unique doesn\t match', function(done) {
+            var time = new Date(Date.now() + 1000*60*3);
+            var time2 = new Date(Date.now() + 1000*60*4);
+
+            jobs.create('unique job', {type: 'active', userId: '123', 'other': true}).unique({'data.type': 'active', 'data.userId': '123', nextRunAt: time}).schedule(time).save(function(err, job) {
+             jobs.create('unique job', {type: 'active', userId: '123', 'other': false}).unique({'data.type': 'active', 'data.userId': '123', nextRunAt: time2}).schedule(time).save(function(err, job) {
+                mongo.collection('agendaJobs').find({name: 'unique job'}).toArray(function(err, j) {
+                  expect(j).to.have.length(2);
+                  done();
+                });
+             });
+            });
+
+          });
+        });
+
+      });
+
       describe('now', function() {
         it('returns a job', function() {
           expect(jobs.now('send email')).to.be.a(Job);
@@ -257,7 +305,6 @@ describe('agenda-pg', function() {
           });
         });
       });
-
     });
   });
 });
