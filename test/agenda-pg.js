@@ -32,6 +32,10 @@ describe('agenda-pg', function() {
   this.timeout(5000);
   var jobs;
 
+  beforeEach(function(done) {
+    jobs = new Agenda({ pg: dbConfig }, done);
+  });
+
   afterEach(function(done) {
     setTimeout(function() {
       clearJobs(function() {
@@ -108,10 +112,6 @@ describe('agenda-pg', function() {
     });
 
     describe('job methods', function() {
-      beforeEach(function(done) {
-        jobs = new Agenda({ pg: dbConfig }, done);
-      });
-
       describe('create', function() {
         var job;
         beforeEach(function() {
@@ -157,7 +157,7 @@ describe('agenda-pg', function() {
 
             // Give the saves a little time to propagate
             setTimeout(function() {
-              jobs.jobs({name: 'shouldBeSingleJob'}, function(err, res) {
+              jobs.jobs('name= \'shouldBeSingleJob\'', function(err, res) {
                 expect(res).to.have.length(1);
                 done();
               });
@@ -262,7 +262,7 @@ describe('agenda-pg', function() {
         it('returns jobs', function(done) {
           var job = jobs.create('test');
           job.save(function() {
-            jobs.jobs({}, function(err, c) {
+            jobs.jobs(null, function(err, c) {
               expect(c.length).to.not.be(0);
               expect(c[0]).to.be.a(Job);
               clearJobs(done);
@@ -276,14 +276,14 @@ describe('agenda-pg', function() {
           var job = jobs.create('no definition');
           jobs.stop(function() {
             job.save(function() {
-              jobs.jobs({name: 'no definition'}, function(err, j) {
+              jobs.jobs('name= \'no definition\'', function(err, j) {
                 if (err) return done(err);
                 expect(j).to.have.length(1);
 
                 jobs.purge(function(err) {
                   if (err) return done(err);
 
-                  jobs.jobs({name: 'no definition'}, function(err, j) {
+                  jobs.jobs('name= \'no definition\'', function(err, j) {
                     if (err) return done(err);
 
                     expect(j).to.have.length(0);
