@@ -301,6 +301,7 @@ describe('agenda-pg', function() {
           var job = jobs.create('someJob', {});
           job.save(function(err, job) {
             expect(job.attrs._id).to.be.ok();
+
             clearJobs(done);
           });
         });
