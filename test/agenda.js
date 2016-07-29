@@ -301,7 +301,7 @@ describe("agenda", function() {
 
         describe('should demonstrate non-unique contraint', function(done) {
 
-          it('should create two jobs when unique doesn\t match', function(done) {
+          it('should create two jobs when unique doesn\'t match', function(done) {
             var time = new Date(Date.now() + 1000*60*3);
             var time2 = new Date(Date.now() + 1000*60*4);
 
