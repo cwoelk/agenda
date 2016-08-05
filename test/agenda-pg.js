@@ -687,7 +687,7 @@ describe('agenda-pg', function() {
           done();
         });
       });
-      xit('handles errors with q promises', function(done) {
+      it('handles errors with q promises', function(done) {
         job.attrs.name = 'failBoat2';
         jobs.define('failBoat2', function(job, cb) {
           var Q = require('q');
@@ -701,7 +701,7 @@ describe('agenda-pg', function() {
         });
       });
 
-      xit('doesn\'t allow a stale job to be saved', function(done) {
+      it('doesn\'t allow a stale job to be saved', function(done) {
         var flag = false;
         job.attrs.name = 'failBoat3';
         job.save(function(err) {
@@ -711,8 +711,10 @@ describe('agenda-pg', function() {
             // so we have a new job object
             jobs.jobs({name: 'failBoat3'}, function(err, j) {
               if (err) return done(err);
+
               j[0].remove(function(err) {
                 if (err) return done(err);
+
                 cb();
               });
             });
@@ -722,13 +724,13 @@ describe('agenda-pg', function() {
             // Expect the deleted job to not exist in the database
             jobs.jobs({name: 'failBoat3'}, function(err, j) {
               if (err) return done(err);
+
               expect(j).to.have.length(0);
               done();
             });
           });
         });
       });
-
     });
 
     describe('touch', function(done) {
@@ -797,7 +799,7 @@ describe('agenda-pg', function() {
         job.save();
       });
 
-      xit('doesnt save the job if its been removed', function(done) {
+      it('doesnt save the job if its been removed', function(done) {
         var job = jobs.create('another job');
         // Save, then remove, then try and save again.
         // The second save should fail.
@@ -867,6 +869,7 @@ describe('agenda-pg', function() {
       });
 
       xit('clears locks on stop', function(done) {
+        var query = "SELECT * FROM agendajobs WHERE name = 'longRunningJob'";
         jobs.define('longRunningJob', function(job, cb) {
           // Job never finishes
         });
