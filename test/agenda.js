@@ -726,14 +726,14 @@ describe("agenda", function() {
         var flag = false;
         job.attrs.name = 'failBoat3';
         job.save(function(err) {
-          if(err) return done(err);
+          if (err) return done(err);
           jobs.define('failBoat3', function(job, cb) {
             // Explicitly find the job again,
             // so we have a new job object
             jobs.jobs({name: 'failBoat3'}, function(err, j) {
-              if(err) return done(err);
+              if (err) return done(err);
               j[0].remove(function(err) {
-                if(err) return done(err);
+                if (err) return done(err);
                 cb();
               });
             });
@@ -742,7 +742,7 @@ describe("agenda", function() {
           job.run(function(err) {
             // Expect the deleted job to not exist in the database
             jobs.jobs({name: 'failBoat3'}, function(err, j) {
-              if(err) return done(err);
+              if (err) return done(err);
               expect(j).to.have.length(0);
               done();
             });
