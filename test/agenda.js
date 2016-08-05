@@ -356,13 +356,14 @@ describe("agenda", function() {
           var job = jobs.create('no definition');
           jobs.stop(function() {
             job.save(function() {
-              jobs.jobs({name: 'no definition'}, function(err, j) {
-                if(err) return done(err);
+              jobs.jobs({ name: 'no definition' }, function(err, j) {
+                if (err) return done(err);
                 expect(j).to.have.length(1);
                 jobs.purge(function(err) {
-                  if(err) return done(err);
-                  jobs.jobs({name: 'no definition'}, function(err, j) {
-                    if(err) return done(err);
+                  if (err) return done(err);
+                  jobs.jobs({ name: 'no definition' }, function(err, j) {
+                    if (err) return done(err);
+
                     expect(j).to.have.length(0);
                     done();
                   });
@@ -388,9 +389,9 @@ describe("agenda", function() {
       beforeEach(function(done) {
         var remaining = 3;
         var checkDone = function(err) {
-          if(err) return done(err);
+          if (err) return done(err);
           remaining--;
-          if(!remaining) {
+          if (!remaining) {
             done();
           }
         };
@@ -400,20 +401,20 @@ describe("agenda", function() {
       });
 
       afterEach(function(done) {
-        jobs._dbAdapter.deleteJobs({name: {$in: ['jobA', 'jobB']}}, function(err) {
-          if(err) return done(err);
+        jobs._dbAdapter.deleteJobs({ name: { $in: ['jobA', 'jobB'] } }, function(err) {
+          if (err) return done(err);
           done();
         });
       });
 
       it('should cancel a job', function(done) {
-        jobs.jobs({name: 'jobA'}, function(err, j) {
-          if(err) return done(err);
+        jobs.jobs({ name: 'jobA' }, function(err, j) {
+          if (err) return done(err);
           expect(j).to.have.length(2);
-          jobs.cancel({name: 'jobA'}, function(err) {
-            if(err) return done(err);
-            jobs.jobs({name: 'jobA'}, function(err, j) {
-              if(err) return done(err);
+          jobs.cancel({ name: 'jobA' }, function(err) {
+            if (err) return done(err);
+            jobs.jobs({ name: 'jobA' }, function(err, j) {
+              if (err) return done(err);
               expect(j).to.have.length(0);
               done();
             });
@@ -423,12 +424,12 @@ describe("agenda", function() {
 
       it('should cancel multiple jobs', function(done) {
         jobs.jobs({name: {$in: ['jobA', 'jobB']}}, function(err, j) {
-          if(err) return done(err);
+          if (err) return done(err);
           expect(j).to.have.length(3);
-          jobs.cancel({name: {$in: ['jobA', 'jobB']}}, function(err) {
-            if(err) return done(err);
-            jobs.jobs({name: {$in: ['jobA', 'jobB']}}, function(err, j) {
-              if(err) return done(err);
+          jobs.cancel({ name: {$in: ['jobA', 'jobB'] } }, function(err) {
+            if (err) return done(err);
+            jobs.jobs({ name: {$in: ['jobA', 'jobB'] } }, function(err, j) {
+              if (err) return done(err);
               expect(j).to.have.length(0);
               done();
             });
@@ -644,9 +645,9 @@ describe("agenda", function() {
       it('removes the job', function(done) {
         var job = new Job({agenda: jobs, name: 'removed job'});
         job.save(function(err) {
-          if(err) return done(err);
+          if (err) return done(err);
           job.remove(function(err) {
-            if(err) return done(err);
+            if (err) return done(err);
             mongo.collection('agendaJobs').find({_id: job.attrs._id}).toArray(function(err, j) {
               expect(j).to.have.length(0);
               done();
@@ -1452,7 +1453,7 @@ describe("agenda", function() {
 
   });
 
-  describe('Retry', function () {
+  describe('Retry', function() {
     it('should retry a job', function(done) {
       var shouldFail = true;
       jobs.define('a job', function (job, done) {

@@ -9,7 +9,6 @@ var expect = require('expect.js'),
     Agenda = require( path.join('..', 'index.js') ),
     Job = require( path.join('..', 'lib', 'job.js') );
 
-
 var dbConfig =  {
   user: 'postgresql',
   database: 'agenda-test',
@@ -161,7 +160,7 @@ describe('agenda-pg', function() {
 
             // Give the saves a little time to propagate
             setTimeout(function() {
-              jobs.jobs('name= \'shouldBeSingleJob\'', function(err, res) {
+              jobs.jobs({ name: 'shouldBeSingleJob' }, function(err, res) {
                 expect(res).to.have.length(1);
                 done();
               });
@@ -292,7 +291,7 @@ describe('agenda-pg', function() {
         it('returns jobs', function(done) {
           var job = jobs.create('test');
           job.save(function() {
-            jobs.jobs(null, function(err, c) {
+            jobs.jobs({}, function(err, c) {
               expect(c.length).to.not.be(0);
               expect(c[0]).to.be.a(Job);
               clearJobs(done);
@@ -303,17 +302,18 @@ describe('agenda-pg', function() {
 
       describe('purge', function() {
         it('removes all jobs without definitions', function(done) {
+          var notDefinition = { name: 'no definition' };
           var job = jobs.create('no definition');
           jobs.stop(function() {
             job.save(function() {
-              jobs.jobs('name= \'no definition\'', function(err, j) {
+              jobs.jobs(notDefinition, function(err, j) {
                 if (err) return done(err);
                 expect(j).to.have.length(1);
 
                 jobs.purge(function(err) {
                   if (err) return done(err);
 
-                  jobs.jobs('name= \'no definition\'', function(err, j) {
+                  jobs.jobs(notDefinition, function(err, j) {
                     if (err) return done(err);
 
                     expect(j).to.have.length(0);
@@ -349,19 +349,20 @@ describe('agenda-pg', function() {
           }
         };
         jobs.create('jobA').save(checkDone);
-        jobs.create('jobA', 'someData').save(checkDone);
+        jobs.create('jobA', 'someData').save((checkDone));
         jobs.create('jobB').save(checkDone);
       });
 
       afterEach(function(done) {
-        jobs._dbAdapter.deleteJobs('name IN (\'jobA\', \'jobB\')', function(err) {
+        var query = { name: { $in: ['jobA', 'jobB'] } };
+        jobs._dbAdapter.deleteJobs(query, function(err) {
           if (err) return done(err);
           done();
         });
       });
 
       it('should cancel a job', function(done) {
-        var jobQuery = "name = 'jobA'";
+        var jobQuery = { name: 'jobA' };
 
         jobs.jobs(jobQuery, function(err, j) {
           if (err) return done(err);
@@ -380,7 +381,7 @@ describe('agenda-pg', function() {
       });
 
       it('should cancel multiple jobs', function(done) {
-        var multipleJobsQuery = "name IN ('jobA', 'jobB')";
+        var multipleJobsQuery = { name: {$in: ['jobA', 'jobB'] } };
 
         jobs.jobs(multipleJobsQuery, function(err, j) {
           if (err) return done(err);
@@ -399,9 +400,8 @@ describe('agenda-pg', function() {
         });
       });
 
-      // REVISIT: jobs.jobs chokes on my PG with 'invalid input syntax for type json'
-      xit('should cancel jobs only if the data matches', function(done){
-        var jobWithDataQuery = "name = 'jobA' AND data = 'someData'";
+      it('should cancel jobs only if the data matches', function(done){
+        var jobWithDataQuery = { name: 'jobA', data: 'someData' };
 
         jobs.jobs(jobWithDataQuery, function(err, j) {
           if (err) return done(err);
@@ -414,7 +414,7 @@ describe('agenda-pg', function() {
               if (err) return done(err);
 
               expect(j).to.have.length(0);
-              jobs.jobs("name = 'jobA'", function(err, j) {
+              jobs.jobs({ name: 'jobA' }, function(err, j) {
                 if (err) return done(err);
 
                 expect(j).to.have.length(1);
