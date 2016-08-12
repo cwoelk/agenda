@@ -868,7 +868,7 @@ describe('agenda-pg', function() {
         }, jobTimeout);
       });
 
-      xit('clears locks on stop', function(done) {
+      it('clears locks on stop', function(done) {
         var query = "SELECT * FROM agendajobs WHERE name = 'longRunningJob'";
         jobs.define('longRunningJob', function(job, cb) {
           // Job never finishes
@@ -878,9 +878,10 @@ describe('agenda-pg', function() {
         jobs.start();
         setTimeout(function() {
           jobs.stop(function(err, res) {
-            mongo.collection('agendaJobs').findOne({name: 'longRunningJob'}, function(err, job) {
-              expect(job.lockedAt).to.be(null);
-              done();
+            pgClient.query("SELECT * FROM agendajobs WHERE name='longRunningJob'", function(err, res) {
+              var job = res.rows[0];
+              expect(job.lockedat).to.be(null);
+              done(err);
             });
           });
         }, jobTimeout);
