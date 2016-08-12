@@ -18,6 +18,11 @@ var dbConfig =  {
 // Slow timeouts for travis
 var jobTimeout = process.env.TRAVIS ? 1500 : 300;
 
+
+var jobType       = 'do work';
+var jobProcessor  = function(job) { };
+
+
 function clearJobs(done) {
   var client = new Client(dbConfig)
   client.connect();
@@ -33,9 +38,19 @@ describe('agenda-pg', function() {
   var pgClient;
 
   beforeEach(function(done) {
-    jobs = new Agenda({ pg: dbConfig }, done);
     pgClient = new Client(dbConfig);
     pgClient.connect();
+    jobs = new Agenda({ pg: dbConfig }, function(err) {
+      setTimeout(function() {
+        clearJobs(function() {
+          jobs.define('someJob', jobProcessor);
+          jobs.define('send email', jobProcessor);
+          jobs.define('some job', jobProcessor);
+          jobs.define(jobType, jobProcessor);
+          done();
+        });
+      }, 50);
+    });
   });
 
   afterEach(function(done) {
@@ -979,7 +994,7 @@ describe('agenda-pg', function() {
       it("runs a recurring job after a lock has expired", function(done) {
         var startCounter = 0;
 
-        jobs.define("lock job", {lockLifetime: 50}, function(job, cb){
+        jobs.define("lock job", {lockLifetime: 50}, function(job, cb) {
           startCounter++;
 
           if (startCounter != 1) {
@@ -1118,7 +1133,6 @@ describe('agenda-pg', function() {
           jobs.stop(done);
         }, 500);
       });
-
     });
 
     xdescribe('job concurrency', function() {
