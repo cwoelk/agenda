@@ -46,28 +46,28 @@ describe("agenda", function() {
 
       MongoClient.connect(mongoCfg, function( error, db ){
         mongo = db;
-        setTimeout(function() {
-          clearJobs(function() {
-            jobs.define('someJob', jobProcessor);
-            jobs.define('send email', jobProcessor);
-            jobs.define('some job', jobProcessor);
-            jobs.define(jobType, jobProcessor);
-            done();
-          });
-        }, 50);
+        clearJobs(function() {
+          jobs.define('someJob', jobProcessor);
+          jobs.define('send email', jobProcessor);
+          jobs.define('some job', jobProcessor);
+          jobs.define(jobType, jobProcessor);
+          done();
+        });
       });
 
     });
   });
 
   afterEach(function(done) {
-    jobs.stop(function() {
-      clearJobs(function() {
-        mongo.close(function() {
-          jobs._dbAdapter.close(done);
+    setTimeout(function() {
+      jobs.stop(function() {
+        clearJobs(function() {
+          mongo.close(function() {
+            jobs._dbAdapter.close(done);
+          });
         });
       });
-    });
+    }, 50);
   });
 
   describe('Agenda', function() {
