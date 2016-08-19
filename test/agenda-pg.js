@@ -11,7 +11,8 @@ var expect = require('expect.js'),
 
 var dbConfig =  {
   adapter: 'pg',
-  user: 'postgresql',
+  host: 'localhost',
+  user: 'postgres',
   database: 'agenda-test',
   port: 5432,
 };
