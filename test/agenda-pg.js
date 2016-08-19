@@ -10,25 +10,33 @@ var expect = require('expect.js'),
     Job = require( path.join('..', 'lib', 'job.js') );
 
 var dbConfig =  {
+  adapter: 'pg',
   user: 'postgresql',
   database: 'agenda-test',
   port: 5432,
 };
+var pgConfig = 'postgres://' + dbConfig.user + ':' + (dbConfig.password ? dbConfig.password : '') + '@' + (dbConfig.host ? dbConfig.host : 'localhost') + ':' + (dbConfig.port ? dbConfig.port : '5432') +'/' + dbConfig.database;
 
 // Slow timeouts for travis
 var jobTimeout = process.env.TRAVIS ? 1500 : 300;
 
-
 var jobType       = 'do work';
 var jobProcessor  = function(job) { };
 
-
 function clearJobs(done) {
-  var client = new Client(dbConfig)
-  client.connect();
-  client.query('TRUNCATE TABLE agendajobs', function(error, result) {
+  var client = new Client(dbConfig);
+
+  function callback(err, result) {
     client.end();
-    done(error);
+    client = null;
+    done(err, result);
+  }
+
+  client.connect(function(err) {
+    if (err) return callback(err);
+    client.query('TRUNCATE TABLE agendajobs', function(err, result) {
+      callback(err, result);
+    });
   });
 }
 
@@ -38,9 +46,13 @@ describe('agenda-pg', function() {
   var pgClient;
 
   beforeEach(function(done) {
-    pgClient = new Client(dbConfig);
-    pgClient.connect();
-    jobs = new Agenda({ pg: dbConfig }, function(err) {
+    pgClient = new Client(pgConfig);
+    jobs = new Agenda({
+      db: {
+        adapter: 'pg',
+        address: pgConfig,
+      }
+    }, function(err) {
       setTimeout(function() {
         clearJobs(function() {
           jobs.define('someJob', jobProcessor);
@@ -64,38 +76,40 @@ describe('agenda-pg', function() {
 
   describe('Agenda', function() {
     describe('configuration methods', function() {
-      it('sets the _db when passed as an option', function() {
-        jobs = new Agenda({ pg: dbConfig });
-        expect(jobs._dbAdapter.databaseName()).to.equal('agenda-test');
+      it('configures the _db with the passed configuration', function() {
+        var agenda = new Agenda({ db: dbConfig });
+        expect(agenda._dbAdapter.databaseName()).to.equal('agenda-test');
       });
 
       describe('pg', function() {
-        describe ('Client', function() {
-          var pgClient
+        describe('Client', function() {
+          var customClient
 
           beforeEach(function() {
-            pgClient = new Client(dbConfig);
+            customClient = new Client(pgConfig);
           });
 
           afterEach(function() {
-            pgClient.end();
+            // REVISIT: This should not be done on single clients - it actually breaks a test here
+            // customClient.end();
+            customClient = null;
+          });
+
+          it('sets the _db directly when passed as an option', function() {
+            var agenda = new Agenda({ pg: customClient });
+            expect(agenda._dbAdapter.databaseName()).to.equal('agenda-test');
           });
 
           it('sets the _db directly', function(done) {
-            jobs = new Agenda();
-            jobs.pg(pgClient, function() {
+            jobs.pg(customClient, function() {
               expect(jobs._dbAdapter.databaseName()).to.equal('agenda-test');
               done();
             });
           });
 
-          it('returns itself', function(done) {
-            var pgAgendaInstance;
-            jobs = new Agenda();
-            pgAgendaInstance = jobs.pg(pgClient, function() {
-              expect(pgAgendaInstance).to.be(jobs);
-              done();
-            });
+          it('returns itself', function() {
+            var agenda = new Agenda();
+            expect(agenda.pg(customClient)).to.be(agenda);
           });
         });
 
@@ -110,20 +124,16 @@ describe('agenda-pg', function() {
           });
 
           it('sets the _db directly', function(done) {
-            jobs = new Agenda();
-            jobs.pg(pgPool, function() {
+            var agenda = new Agenda();
+            agenda.pg(pgPool, function() {
               expect(jobs._dbAdapter.databaseName()).to.equal('agenda-test');
               done();
             });
           });
 
-          it('returns itself', function(done) {
-            var pgAgendaInstance;
-            jobs = new Agenda();
-            pgAgendaInstance = jobs.pg(pgPool, function() {
-              expect(pgAgendaInstance).to.be(jobs);
-              done();
-            });
+          it('returns itself', function() {
+            var agenda = new Agenda();
+            expect(agenda.pg(pgPool)).to.be(agenda);
           });
         });
       });
@@ -167,6 +177,7 @@ describe('agenda-pg', function() {
             expect(jobs.every('5 seconds', 'send email').agenda).to.be(jobs);
           });
 
+          // REVISIT: This test prevents a clean pool shutdown somehow. Something's wrong here
           it('should update a job that was previously scheduled with `every`', function(done) {
             jobs.every(10, 'shouldBeSingleJob');
             setTimeout(function() {
@@ -219,21 +230,24 @@ describe('agenda-pg', function() {
           name = 'unique job';
           data = { type: 'active', userId: '123', 'other': true };
           newData = { type: 'active', userId: '123', 'other': false };
-          unique =  {'data.type': 'active', 'data.userId': '123'};
+          unique =  { 'data.type': 'active', 'data.userId': '123' };
           query = "SELECT * FROM agendajobs WHERE name = 'unique job'";
         });
 
         describe('should demonstrate unique contraint', function(done) {
           it('should modify one job when unique matches', function(done) {
-            jobs.create(name, data).unique(unique).schedule("now").save(function(err, job1) {
+            jobs.create(name, data).unique(unique).schedule('now').save(function(err, job1) {
               setTimeout(function() {  // Avoid timing condition where nextRunAt coincidentally is the same
-                jobs.create(name,  newData).unique(unique).schedule("now").save(function(err, job2) {
+                jobs.create(name, newData).unique(unique).schedule('now').save(function(err, job2) {
                   expect(job1.attrs.nextRunAt.toISOString())
                     .not.to.equal(job2.attrs.nextRunAt.toISOString());
 
-                  pgClient.query(query, function(err, res) {
-                    expect(res.rows).to.have.length(1);
-                    done(err);
+                  pgClient.connect(function(err) {
+                    if (err) return done(err);
+                    pgClient.query(query, function(err, res) {
+                      expect(res.rows).to.have.length(1);
+                      done(err);
+                    });
                   });
                 });
               }, 1);
@@ -249,9 +263,12 @@ describe('agenda-pg', function() {
                   expect(job1.attrs.nextRunAt.toISOString())
                     .to.equal(job2.attrs.nextRunAt.toISOString());
 
-                  pgClient.query(query, function(err, res) {
-                    expect(res.rows).to.have.length(1);
-                    done(err);
+                  pgClient.connect(function(err) {
+                    if (err) return done(err);
+                    pgClient.query(query, function(err, res) {
+                      expect(res.rows).to.have.length(1);
+                      done(err);
+                    });
                   });
                 }, 1);
               });
@@ -260,7 +277,7 @@ describe('agenda-pg', function() {
         });
 
         describe('should demonstrate non-unique contraint', function(done) {
-          it('should create two jobs when unique doesn\t match', function(done) {
+          it('should create two jobs when unique doesn\'t match', function(done) {
             var time = new Date(Date.now() + 1000*60*3);
             var time2 = new Date(Date.now() + 1000*60*4);
             var unique1 = {'data.type': 'active', 'data.userId': '123', nextRunAt: time};
@@ -272,9 +289,12 @@ describe('agenda-pg', function() {
              jobs.create(name, newData).unique(unique2).schedule(time2).save(function(err, job) {
                if (err) return done(err);
 
-               pgClient.query(query, function(err, res) {
-                 expect(res.rows).to.have.length(2);
-                 done(err);
+               pgClient.connect(function(err) {
+                 if (err) return done(err);
+                 pgClient.query(query, function(err, res) {
+                   expect(res.rows).to.have.length(2);
+                   done(err);
+                 });
                });
              });
             });
@@ -642,9 +662,12 @@ describe('agenda-pg', function() {
           if (err) return done(err);
           job.remove(function(err) {
             if (err) return done(err);
-            pgClient.query(query, function(err, res) {
-              expect(res.rows).to.have.length(0);
-              done(err);
+            pgClient.connect(function(err) {
+              if (err) return done(err);
+              pgClient.query(query, function(err, res) {
+                expect(res.rows).to.have.length(0);
+                done(err);
+              });
             });
           });
         });
@@ -893,10 +916,13 @@ describe('agenda-pg', function() {
         jobs.start();
         setTimeout(function() {
           jobs.stop(function(err, res) {
-            pgClient.query("SELECT * FROM agendajobs WHERE name='longRunningJob'", function(err, res) {
-              var job = res.rows[0];
-              expect(job.lockedat).to.be(null);
-              done(err);
+            pgClient.connect(function(err) {
+              if (err) return done(err);
+              pgClient.query("SELECT * FROM agendajobs WHERE name='longRunningJob'", function(err, res) {
+                var job = res.rows[0];
+                expect(job.lockedat).to.be(null);
+                done(err);
+              });
             });
           });
         }, jobTimeout);
