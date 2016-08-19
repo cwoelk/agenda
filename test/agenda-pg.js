@@ -14,7 +14,7 @@ var dbConfig =  {
   host: 'localhost',
   user: 'postgres',
   database: 'agenda-test',
-  port: process.env.TRAVIS ? 5433 : 5432,
+  port: 5432,
 };
 var pgConfig = 'postgres://' + dbConfig.user + ':' + (dbConfig.password ? dbConfig.password : '') + '@' + (dbConfig.host ? dbConfig.host : 'localhost') + ':' + (dbConfig.port ? dbConfig.port : '5432') +'/' + dbConfig.database;
 
