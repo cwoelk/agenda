@@ -66,10 +66,23 @@ describe('agenda-pg', function() {
   });
 
   afterEach(function(done) {
+    if (!jobs) {
+      return done(new Error('Jobs should not yet have been nullified!'));
+    }
+
     setTimeout(function() {
-      clearJobs(function() {
-        pgClient.end();
-        jobs._dbAdapter.close(done);
+      jobs.stop(function(err) {
+        if (err) return done(err);
+        clearJobs(function(err) {
+          if (err) return done(err);
+          jobs._dbAdapter.close(function(err) {
+            if (err) return done(err);
+            pgClient.end();
+            pgClient = null;
+            jobs = null;
+            done();
+          });
+        });
       });
     }, 50);
   });

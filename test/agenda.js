@@ -61,14 +61,13 @@ describe("agenda", function() {
   });
 
   afterEach(function(done) {
-      setTimeout(function() {
-        clearJobs(function() {
-          mongo.close(function() {
-            jobs.stop();
-            jobs._dbAdapter.close(done);
-          });
+    jobs.stop(function() {
+      clearJobs(function() {
+        mongo.close(function() {
+          jobs._dbAdapter.close(done);
         });
-      }, 50);
+      });
+    });
   });
 
   describe('Agenda', function() {
